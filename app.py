@@ -34,17 +34,31 @@ def index():
     return '''
     <html>
         <head>
-            <title>Webcam Stream</title>
+            <title>Webcam Streams</title>
         </head>
         <body>
-            <h1>Webcam Stream</h1>
-            <img src="/video_feed" width="720" height="480" />
+            <h1>Webcam Streams</h1>
+            <div style="display: flex; gap: 20px;">
+                <div>
+                    <h2>Camera Feed 1</h2>
+                    <img src="/video_feed_1" width="720" height="480" />
+                </div>
+                <div>
+                    <h2>Camera Feed 2</h2>
+                    <img src="/video_feed_2" width="720" height="480" />
+                </div>
+            </div>
         </body>
     </html>
     '''
 
-@app.route('/video_feed')
-def video_feed():
+@app.route('/video_feed_1')
+def video_feed_1():
+    return Response(generate_frames(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/video_feed_2')
+def video_feed_2():
     return Response(generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 

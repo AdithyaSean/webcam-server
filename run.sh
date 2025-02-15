@@ -5,23 +5,24 @@ set -e
 
 echo "Setting up webcam server..."
 
-# Remove existing virtual environment if it exists
-if [ -d "venv" ]; then
-    echo "Removing existing virtual environment..."
-    rm -rf venv
+# Check if virtual environment exists
+if [ ! -d "venv" ]; then
+    # Create virtual environment if it doesn't exist
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+    
+    # Activate virtual environment
+    echo "Activating virtual environment..."
+    source venv/bin/activate
+    
+    # Install requirements
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+else
+    # Just activate existing virtual environment
+    echo "Activating existing virtual environment..."
+    source venv/bin/activate
 fi
-
-# Create virtual environment
-echo "Creating virtual environment..."
-python3 -m venv venv
-
-# Activate virtual environment
-echo "Activating virtual environment..."
-source venv/bin/activate
-
-# Install requirements
-echo "Installing dependencies..."
-pip install -r requirements.txt
 
 # Run the application
 echo "Starting webcam server..."
