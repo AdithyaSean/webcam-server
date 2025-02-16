@@ -1,33 +1,25 @@
 #!/bin/bash
 
-# Exit on error
-set -e
+# Get number of streams from command line argument, default to 1 if not provided
+num_streams=${1:-1}
 
-echo "Setting up webcam server..."
+# Virtual environment directory
+VENV_DIR=".venv"
 
-# Check if virtual environment exists
-if [ ! -d "venv" ]; then
-    # Create virtual environment if it doesn't exist
+# Create virtual environment if it doesn't exist
+if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment..."
-    python3 -m venv venv
+    python3 -m venv $VENV_DIR
     
-    # Activate virtual environment
-    echo "Activating virtual environment..."
-    source venv/bin/activate
-    
-    # Install requirements
-    echo "Installing dependencies..."
+    # Activate virtual environment and install requirements
+    source $VENV_DIR/bin/activate
+    echo "Installing requirements..."
     pip install -r requirements.txt
 else
-    # Just activate existing virtual environment
-    echo "Activating existing virtual environment..."
-    source venv/bin/activate
+    # Just activate the virtual environment
+    source $VENV_DIR/bin/activate
 fi
 
-# Run the application
-echo "Starting webcam server..."
-echo "To access from other devices in the network, use your computer's IP address instead of localhost"
-python app.py
-
-# Cleanup on exit
-deactivate
+# Run the Flask app with the specified number of streams
+echo "Starting server with $num_streams stream(s)..."
+python3 app.py $num_streams
