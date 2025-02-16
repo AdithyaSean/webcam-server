@@ -1,61 +1,78 @@
 # Webcam Server
 
-A simple Python application that streams webcam output over HTTP within your local network using Flask and OpenCV.
+A Flask-based webcam streaming server that supports multiple stream views of a single camera feed.
+
+## Features
+
+- Multiple stream views of the same camera feed
+- Responsive grid layout that adapts to screen size
+- Automatic virtual environment setup and dependency management
+- Easy to run with different numbers of streams
+- Cross-device accessible through network
 
 ## Requirements
 
 - Python 3.x
-- Webcam access
-- macOS/Linux/Windows
+- Webcam/Camera device
+- Required packages (automatically installed):
+  - Flask
+  - OpenCV-Python
+  - NumPy
 
-## Installation
+## Installation & Setup
 
-1. Clone this repository:
+The project uses a virtual environment for dependency management. The setup is automated through the `run.sh` script.
+
+1. Clone the repository:
 ```bash
-git clone https://github.com/AdithyaSean/webcam-server
+git clone https://github.com/yourusername/webcam-server.git
 cd webcam-server
 ```
 
-2. Run the setup script:
+2. Make the run script executable (if not already):
 ```bash
-./run.sh
+chmod +x run.sh
 ```
-
-The script will:
-- Create a Python virtual environment
-- Install required dependencies
-- Start the webcam server
 
 ## Usage
 
-1. After running the setup script, the server will start at:
-   - Local access: http://localhost:5000
-   - Network access: http://<your-ip-address>:5000
+Run the server using the provided shell script:
 
-2. Open the URL in a web browser to view the webcam stream.
+```bash
+# Start with 1 stream (default)
+./run.sh
+
+# Start with 2 streams
+./run.sh 2
+
+# Start with 3 streams
+./run.sh 3
+```
+
+The script will:
+1. Create a virtual environment (if it doesn't exist)
+2. Install required dependencies (on first run)
+3. Start the Flask server with the specified number of streams
+
+Access the streams through your web browser at:
+```
+http://localhost:3000
+```
+
+Or from other devices on the same network using:
+```
+http://<your-ip-address>:3000
+```
+
+## How It Works
+
+- The server captures video from your default camera (usually the built-in webcam on laptops)
+- Each stream view shows the same camera feed in real-time
+- The web interface automatically adjusts the layout based on the number of streams
+- All streams share a single camera instance for efficient resource usage
 
 ## Files
 
-- `app.py`: Main application code for webcam capture and streaming
+- `app.py`: Main Flask application with video streaming logic
+- `run.sh`: Setup and run script with virtual environment management
 - `requirements.txt`: Python package dependencies
-- `run.sh`: Setup and execution script
-
-## Troubleshooting
-
-1. **Camera Access Permission**
-   - On macOS: Allow camera access in System Preferences > Security & Privacy > Camera
-   - On Windows: Allow camera access in Settings > Privacy > Camera
-
-2. **Package Installation Issues**
-   - The script will automatically create a fresh virtual environment and install dependencies
-   - If you encounter NumPy/OpenCV compatibility issues, the script handles this by using compatible versions
-
-## Notes
-
-- The stream is accessible to any device on your local network
-- For security, the server only binds to your local network
-- Close the terminal window to stop the server
-
-## Security Warning
-
-This is a basic implementation meant for local network use. Do not expose this server to the public internet without implementing proper security measures.
