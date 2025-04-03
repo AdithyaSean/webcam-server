@@ -1,8 +1,10 @@
 #!/bin/bash
 
+# filepath: /home/adithya/Dev/Python/webcam-server/webcam-server.sh
 function start_server() {
-    # Get number of streams from command line argument, default to 1 if not provided
-    num_streams=${1:-1}
+    # Default host and port
+    HOST="0.0.0.0"
+    PORT="3000"
 
     # Virtual environment directory
     VENV_DIR=".venv"
@@ -19,22 +21,22 @@ function start_server() {
         python3 -m venv $VENV_DIR
         
         # Activate virtual environment and install requirements
-        source $VENV_DIR/bin/activate
+        source "$VENV_DIR/bin/activate"
         echo "Installing requirements..."
         pip install -r requirements.txt
     else
         # Just activate the virtual environment
-        source $VENV_DIR/bin/activate
+        source "$VENV_DIR/bin/activate"
     fi
 
-    # Run the Flask app with the specified number of streams
-    echo "Starting server with $num_streams stream(s)..."
-    python3 app.py $num_streams
+    # Run the FastAPI app using uvicorn
+    echo "Starting server on host $HOST and port $PORT..."
+    uvicorn app:app --host "$HOST" --port "$PORT" --reload
 }
 
 function stop_server() {
-    # Find all Python processes running the webcam server app.py
-    PIDS=$(pgrep -f "python3 app.py")
+    # Find all uvicorn processes running the app
+    PIDS=$(pgrep -f "uvicorn app:app")
 
     if [ -z "$PIDS" ]; then
         echo "No webcam server instances found running."
@@ -51,21 +53,21 @@ function stop_server() {
 }
 
 function show_help() {
-    echo "Usage: webcam-server [COMMAND] [OPTIONS]"
+    echo "Usage: webcam-server [COMMAND]"
     echo ""
     echo "Commands:"
-    echo "  start [N]    Start the webcam server with N streams (default: 1)"
-    echo "  stop         Stop all running webcam server instances"
-    echo "  restart [N]  Restart the webcam server with N streams (default: 1)"
-    echo "  help         Show this help message"
+    echo "  start          Start the webcam server"
+    echo "  stop           Stop all running webcam server instances"
+    echo "  restart        Restart the webcam server"
+    echo "  help           Show this help message"
     echo ""
-    echo "If no command is provided, the server will start with 1 stream by default."
+    echo "If no command is provided, the server will start by default."
 }
 
 # Handle command line arguments
 case "$1" in
     "start")
-        start_server "$2"
+        start_server
         ;;
     "stop")
         stop_server
@@ -73,23 +75,18 @@ case "$1" in
     "restart")
         stop_server
         sleep 1
-        start_server "$2"
+        start_server
         ;;
     "help")
         show_help
         ;;
     "")
-        # Default to starting with 1 stream if no arguments
-        start_server 1
+        # Default to starting the server if no arguments
+        start_server
         ;;
     *)
-        if [[ "$1" =~ ^[0-9]+$ ]]; then
-            # If first arg is a number, treat it as number of streams
-            start_server "$1"
-        else
-            echo "Unknown command: $1"
-            show_help
-            exit 1
-        fi
+        echo "Unknown command: $1"
+        show_help
+        exit 1
         ;;
 esac
