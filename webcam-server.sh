@@ -1,92 +1,142 @@
 #!/bin/bash
 
 # filepath: /home/adithya/Dev/Python/webcam-server/webcam-server.sh
-function start_server() {
-    # Default host and port
-    HOST="0.0.0.0"
-    PORT="3000"
 
-    # Virtual environment directory
-    VENV_DIR=".venv"
+# Script to manage the webcam-server application
 
-    # Get the directory where this script is located
-    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Application name
+APP_NAME="webcam-server"
+
+# Default port
+DEFAULT_PORT=3000
+
+# Usage function
+usage() {
+    echo "Usage: $APP_NAME {start|stop|restart|status} [options]"
+    echo "Options:"
+    echo "  -p <port>   Specify the port number (default: $DEFAULT_PORT)"
+    echo "  -h          Show this help message"
+    exit 1
+}
+
+# Function to start the server
+start() {
+    local port=$DEFAULT_PORT
     
-    # Change to the script directory to ensure proper paths for virtual env
-    cd "$SCRIPT_DIR"
-
-    # Create virtual environment if it doesn't exist
-    if [ ! -d "$VENV_DIR" ]; then
-        echo "Creating virtual environment..."
-        python3 -m venv $VENV_DIR
-        
-        # Activate virtual environment and install requirements
-        source "$VENV_DIR/bin/activate"
-        echo "Installing requirements..."
-        pip install -r requirements.txt
-    else
-        # Just activate the virtual environment
-        source "$VENV_DIR/bin/activate"
-    fi
-
-    # Run the FastAPI app using uvicorn
-    echo "Starting server on host $HOST and port $PORT..."
-    uvicorn app:app --host "$HOST" --port "$PORT" --reload
-}
-
-function stop_server() {
-    # Find all uvicorn processes running the app
-    PIDS=$(pgrep -f "uvicorn app:app")
-
-    if [ -z "$PIDS" ]; then
-        echo "No webcam server instances found running."
-        return 0
-    fi
-
-    # Kill all found processes
-    for PID in $PIDS; do
-        echo "Stopping webcam server process (PID: $PID)..."
-        kill $PID
+    # Parse options
+    while getopts "p:h" opt; do
+        case $opt in
+            p)  port="$OPTARG" ;;
+            h)  usage ;;
+            \?) echo "Invalid option: -$OPTARG" >&2; usage ;;
+        esac
     done
+    shift $((OPTIND-1))
 
-    echo "Webcam server stopped successfully."
+    # Check if the virtual environment is set up
+    if [ ! -d "$SCRIPT_DIR/.venv" ]; then
+        echo "Error: Virtual environment not found. Please run setup.sh first."
+        exit 1
+    fi
+
+    # Activate the virtual environment
+    source "$SCRIPT_DIR/.venv/bin/activate"
+
+    # Check if the server is already running
+    if is_running; then
+        echo "Server is already running."
+        exit 0
+    fi
+
+    # Change to the script directory before starting server
+    cd "$SCRIPT_DIR"
+    
+    # Start the server in the background
+    echo "Starting server on port $port..."
+    uvicorn app:app --host 0.0.0.0 --port "$port" --reload &
+    
+    # Store the process ID
+    echo $! > "$SCRIPT_DIR/$APP_NAME.pid"
+
+    echo "Server started in the background."
 }
 
-function show_help() {
-    echo "Usage: webcam-server [COMMAND]"
-    echo ""
-    echo "Commands:"
-    echo "  start          Start the webcam server"
-    echo "  stop           Stop all running webcam server instances"
-    echo "  restart        Restart the webcam server"
-    echo "  help           Show this help message"
-    echo ""
-    echo "If no command is provided, the server will start by default."
+# Function to stop the server
+stop() {
+    if ! is_running; then
+        echo "Server is not running."
+        exit 0
+    fi
+
+    # Get the process ID
+    local pid=$(get_pid)
+
+    # Stop the server
+    echo "Stopping server (PID: $pid)..."
+    kill "$pid"
+    wait "$pid" 2>/dev/null # Wait for the process to terminate, discard errors
+    
+    # Remove the PID file
+    rm -f "$SCRIPT_DIR/$APP_NAME.pid"
+
+    echo "Server stopped."
 }
 
-# Handle command line arguments
+# Function to restart the server
+restart() {
+    stop
+    sleep 1 # Give it a second to fully stop
+    start "$@" # Pass any options to the start function
+}
+
+# Function to check the server status
+status() {
+    if is_running; then
+        echo "Server is running (PID: $(get_pid))."
+    else
+        echo "Server is not running."
+    fi
+}
+
+# Helper function to get the process ID
+get_pid() {
+    if [ -f "$SCRIPT_DIR/$APP_NAME.pid" ]; then
+        cat "$SCRIPT_DIR/$APP_NAME.pid"
+    else
+        echo ""
+    fi
+}
+
+# Helper function to check if the server is running
+is_running() {
+    local pid=$(get_pid)
+    if [ -n "$pid" ] && ps -p "$pid" > /dev/null; then
+        return 0 # Running
+    else
+        return 1 # Not running
+    fi
+}
+
+# Main script logic
 case "$1" in
-    "start")
-        start_server
+    start)
+        start "${@:2}" # Pass along arguments after the command
         ;;
-    "stop")
-        stop_server
+    stop)
+        stop
         ;;
-    "restart")
-        stop_server
-        sleep 1
-        start_server
+    restart)
+        restart "${@:2}" # Pass along arguments after the command
         ;;
-    "help")
-        show_help
-        ;;
-    "")
-        # Default to starting the server if no arguments
-        start_server
+    status)
+        status
         ;;
     *)
-        echo "Unknown command: $1"
-        show_help
-        exit 1
+        usage
         ;;
 esac
+
+exit 0

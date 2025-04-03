@@ -1,5 +1,2 @@
-flask
-numpy
-opencv-python
 fastapi
 uvicorn
