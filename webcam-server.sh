@@ -22,7 +22,11 @@ webcam-server() {
             fi
             
             # Start the FastAPI app
-            cd "$WEBCAM_SERVER_DIR" && uvicorn app:app --host 0.0.0.0 --port 3000
+            cd "$WEBCAM_SERVER_DIR" && uvicorn app:app --host 0.0.0.0 --port 3000 &
+            echo "http://localhost:3000/video1, http://localhost:3000/video2, http://localhost:3000/video3, http://localhost:3000/video4"
+            echo "Press Ctrl+C to stop the server"
+            echo "To stop the server, run: webcam-server stop"
+            echo "To check the server status, run: webcam-server status"
             ;;
             
         stop)
@@ -34,6 +38,14 @@ webcam-server() {
         status)
             if pgrep -f "uvicorn app:app" > /dev/null; then
                 echo "HTTP Video server is running"
+                echo "Available video streams:"
+                echo "  Video endpoints:"
+                echo "Available video streams:"
+                for i in {1..4}; do
+                    if [ -f "${WEBCAM_SERVER_DIR}/videos/video${i}.mp4" ]; then
+                        echo "  - video${i}: http://localhost:3000/video${i}"
+                    fi
+                done
             else
                 echo "HTTP Video server is not running"
             fi

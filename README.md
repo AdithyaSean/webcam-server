@@ -19,7 +19,7 @@ A simple FastAPI application that serves video files as continuous looping strea
 
 1. Clone the repository:
   ```bash
-  git clone https://github.com/yourusername/webcam-server.git
+  git clone https://github.com/AdithyaSean/webcam-server.git
   cd webcam-server
   ```
 
@@ -55,19 +55,10 @@ The application can be configured using environment variables:
 
 ## API
 
-- `GET /videos`: Returns a JSON object containing information about all available video streams.
-  
-  Example response:
-  ```json
-  {
-   "videos": {
-    "video1": "http://localhost:3000/video1",
-    "video2": "http://localhost:3000/video2",
-    "video3": "http://localhost:3000/video3",
-    "video4": "http://localhost:3000/video4"
-   }
-  }
-  ```
-
 - `GET /{video_name}`: Streams the specified video directly via HTTP.
   This endpoint will stream the video in an endless loop.
+
+  for example:
+  ```bash
+  ffplay http://localhost:3000/video1.mp4
+  ```
