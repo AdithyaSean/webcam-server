@@ -2,7 +2,7 @@
 
 # Webcam Server control script - Simplified for HTTP streaming
 
-WEBCAM_SERVER_DIR="/home/adithya/dev/personal/webcam-server"
+WEBCAM_SERVER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VENV_PATH="${WEBCAM_SERVER_DIR}/.venv"
 
 webcam-server() {

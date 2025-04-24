@@ -1,7 +1,6 @@
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-import os
 
 # Video files configuration
 VIDEO_DIR = Path("videos")
