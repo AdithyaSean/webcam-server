@@ -1,12 +1,12 @@
 # Webcam Server
 
-A simple FastAPI application that creates RTSP streams from video files using FFmpeg.
+A simple FastAPI application that serves video files directly via HTTP.
 
 ## Features
 
-- Automatically streams video files via RTSP
-- Loops videos continuously
-- Simple REST API endpoint to discover available streams
+- Direct HTTP video streaming without additional dependencies
+- Built-in HTML interface with embedded video players
+- Simple REST API endpoint to discover available videos
 - Configurable via environment variables
 
 ## Requirements
@@ -14,8 +14,6 @@ A simple FastAPI application that creates RTSP streams from video files using FF
 - Python 3.7+
 - FastAPI
 - Uvicorn
-- FFmpeg
-- [MediaMTX](https://github.com/bluenviron/mediamtx) RTSP server
 
 ## Setup
 
@@ -25,19 +23,12 @@ A simple FastAPI application that creates RTSP streams from video files using FF
   cd webcam-server
   ```
 
-2. Install dependencies:
+2. Run the setup script:
   ```bash
-  pip install fastapi uvicorn
+  ./setup.sh
   ```
 
-3. Ensure FFmpeg is installed:
-  ```bash
-  sudo apt install ffmpeg  # For Ubuntu/Debian
-  ```
-
-4. Download and set up MediaMTX following their documentation
-
-5. Add video files to the `videos` directory:
+3. Add video files to the `videos` directory:
   - video1.mp4
   - video2.mp4
   - video3.mp4
@@ -46,37 +37,40 @@ A simple FastAPI application that creates RTSP streams from video files using FF
 ## Configuration
 
 The application can be configured using environment variables:
-- `RTSP_PORT`: The port for RTSP streaming (default: 8554)
-- `SERVER_IP`: The IP address to advertise for streams (default: "localhost")
+- `SERVER_IP`: The host:port to advertise for streams (default: "localhost:3000")
 
 ## Usage
 
-1. Start the MediaMTX server:
+1. Start the webcam server:
   ```bash
-  ./mediamtx
+  webcam-server start
   ```
-
-2. Start the webcam server:
+  
+  Or manually with:
   ```bash
   uvicorn app:app --host 0.0.0.0 --port 3000
   ```
 
-3. Access the API at `http://localhost:3000` to get a list of available RTSP streams.
+2. Access the web interface at `http://localhost:3000` to view and play all available videos.
 
-4. Connect to the streams using any RTSP client (e.g., VLC Media Player) with the URLs provided by the API.
+3. Videos can be streamed directly in any browser using the URLs provided.
 
 ## API
 
-- `GET /`: Returns a JSON object containing information about all available RTSP streams.
+- `GET /`: Returns an HTML page with embedded video players for all available videos.
+
+- `GET /videos`: Returns a JSON object containing information about all available video streams.
   
   Example response:
   ```json
   {
-   "streams": {
-    "video1": "rtsp://localhost:8554/video1",
-    "video2": "rtsp://localhost:8554/video2",
-    "video3": "rtsp://localhost:8554/video3",
-    "video4": "rtsp://localhost:8554/video4"
+   "videos": {
+    "video1": "http://localhost:3000/stream/video1",
+    "video2": "http://localhost:3000/stream/video2",
+    "video3": "http://localhost:3000/stream/video3",
+    "video4": "http://localhost:3000/stream/video4"
    }
   }
   ```
+
+- `GET /stream/{video_name}`: Streams the specified video directly via HTTP.

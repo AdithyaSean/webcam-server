@@ -1,5 +1,5 @@
 #!/bin/bash
-# Simple setup script for webcam-server
+# Simplified setup script for HTTP video server
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Color codes for output
@@ -8,7 +8,7 @@ YELLOW='\033[0;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo "Setting up webcam-server environment..."
+echo "Setting up HTTP video server environment..."
 cd "$SCRIPT_DIR"
 
 # Check for Python
@@ -16,42 +16,6 @@ if ! command -v python3 &> /dev/null; then
     echo -e "${RED}Error: Python 3 is not installed.${NC}"
     echo "Please install Python 3.7 or higher"
     exit 1
-fi
-
-# Check for FFmpeg
-if ! command -v ffmpeg &> /dev/null; then
-    echo -e "${YELLOW}Warning: FFmpeg is not installed.${NC}"
-    echo "FFmpeg is required for video streaming. Install with:"
-    echo "    sudo apt update && sudo apt install ffmpeg"
-    read -p "Install FFmpeg now? (y/n): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        sudo apt update && sudo apt install ffmpeg -y
-        if [ $? -ne 0 ]; then
-            echo -e "${RED}Failed to install FFmpeg.${NC}"
-            exit 1
-        fi
-    else
-        echo -e "${YELLOW}Continuing without FFmpeg. Streaming won't work.${NC}"
-    fi
-fi
-
-# Download MediaMTX if needed
-if [ ! -f "$SCRIPT_DIR/mediamtx" ]; then
-    echo -e "${YELLOW}Downloading MediaMTX...${NC}"
-    ARCH=$(uname -m)
-    if [ "$ARCH" = "x86_64" ]; then
-        wget https://github.com/bluenviron/mediamtx/releases/download/v1.5.0/mediamtx_v1.5.0_linux_amd64.tar.gz -O mediamtx.tar.gz
-    elif [ "$ARCH" = "aarch64" ]; then
-        wget https://github.com/bluenviron/mediamtx/releases/download/v1.5.0/mediamtx_v1.5.0_linux_arm64.tar.gz -O mediamtx.tar.gz
-    else
-        echo -e "${RED}Unsupported architecture: $ARCH${NC}"
-        exit 1
-    fi
-    
-    tar -xzf mediamtx.tar.gz
-    chmod +x "$SCRIPT_DIR/mediamtx"
-    rm mediamtx.tar.gz
 fi
 
 # Create videos directory
@@ -85,7 +49,7 @@ fi
 
 echo -e "${GREEN}Setup completed!${NC}"
 echo -e "${YELLOW}To start the server:${NC}"
-echo "1. Add video files to the videos/ directory"
-echo "2. Start MediaMTX: ./mediamtx"
-echo "3. Start the server: uvicorn app:app --host 0.0.0.0 --port 3000"
-echo -e "${YELLOW}RTSP streams will be available at: rtsp://SERVER_IP:8554/video*${NC}"
+echo "1. Add your video files to the videos/ directory"
+echo "2. Start the server with: webcam-server start"
+echo -e "${YELLOW}Videos will be available at: http://SERVER_IP:3000${NC}"
+echo "For direct video URLs, visit: http://SERVER_IP:3000/videos"

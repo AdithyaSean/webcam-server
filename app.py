@@ -1,84 +1,91 @@
 from pathlib import Path
-from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
 import os
-import time
-import subprocess
-from fastapi import FastAPI
 
 # --- Configuration ---
 VIDEO_DIR = Path("videos")  # Directory containing the video files
-VIDEO_FILES = [
-    VIDEO_DIR / "video1.mp4",
-    VIDEO_DIR / "video2.mp4",
-    VIDEO_DIR / "video3.mp4",
-    VIDEO_DIR / "video4.mp4"
-]
-RTSP_PORT = int(os.environ.get("RTSP_PORT", 8554))
+VIDEO_FILES = {
+    f"video{idx}": VIDEO_DIR / f"video{idx}.mp4" 
+    for idx in range(1, 5)
+}
 
-# Global variables
-FFMPEG_PROCESSES = []  # Will hold FFmpeg process instances
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Start RTSP streams
-    start_streams()
-    yield
-    # Stop streams on shutdown
-    stop_streams()
-
-app = FastAPI(lifespan=lifespan)
-
-def start_streams():
-    """Start FFmpeg processes to stream videos to RTSP"""
-    global FFMPEG_PROCESSES
-    
-    # Create RTSP stream for each video file
-    for idx, video_file in enumerate(VIDEO_FILES, 1):
-        if video_file.is_file():
-            stream_path = f"video{idx}"
-            rtsp_url = f"rtsp://127.0.0.1:{RTSP_PORT}/{stream_path}"
-            
-            cmd = [
-                "ffmpeg",
-                "-re",                  # Read input at native frame rate
-                "-stream_loop", "-1",   # Loop forever
-                "-i", str(video_file),  # Input file
-                "-c:v", "copy",         # Copy video codec
-                "-c:a", "copy",         # Copy audio codec
-                "-f", "rtsp",           # Output format: RTSP
-                "-rtsp_transport", "tcp", # Use TCP for RTSP
-                rtsp_url                # Output URL
-            ]
-            
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            FFMPEG_PROCESSES.append(process)
-            time.sleep(0.5)  # Brief pause between starting streams
-
-def stop_streams():
-    """Stop all FFmpeg processes"""
-    global FFMPEG_PROCESSES
-    for process in FFMPEG_PROCESSES:
-        try:
-            process.terminate()
-        except:
-            pass
-    FFMPEG_PROCESSES = []
+app = FastAPI()
 
 @app.get("/")
 async def root():
-    """Returns information about available RTSP streams."""
-    server_ip = os.environ.get("SERVER_IP", "localhost")
-    streams = {}
-    for idx in range(1, 5):
-        stream_name = f"video{idx}"
-        streams[stream_name] = f"rtsp://{server_ip}:{RTSP_PORT}/{stream_name}"
+    """Returns an HTML page with video players for all videos"""
+    server_host = os.environ.get("SERVER_IP", "localhost:3000")
     
-    return {"streams": streams}
+    video_links = ""
+    for video_name in VIDEO_FILES.keys():
+        if (VIDEO_DIR / f"{video_name}.mp4").is_file():
+            video_links += f"""
+            <div class="video-container">
+                <h3>{video_name}</h3>
+                <video width="640" height="480" controls>
+                    <source src="/stream/{video_name}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            """
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Video Server</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }}
+            .video-container {{
+                margin-bottom: 40px;
+            }}
+            h1 {{
+                color: #333;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Video Server</h1>
+        <p>The following videos are available for streaming:</p>
+        {video_links}
+        <h2>Direct URLs</h2>
+        <ul>
+            {"".join([f'<li><a href="/stream/{name}">{name}</a></li>' for name in VIDEO_FILES.keys() if (VIDEO_DIR / f"{name}.mp4").is_file()])}
+        </ul>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+@app.get("/stream/{video_name}")
+async def stream_video(video_name: str):
+    """Stream a video file directly via HTTP"""
+    if video_name not in VIDEO_FILES:
+        raise HTTPException(status_code=404, detail=f"Video {video_name} not found")
+    
+    video_path = VIDEO_FILES[video_name]
+    if not video_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Video file {video_name} does not exist")
+    
+    return FileResponse(path=video_path, media_type="video/mp4")
+
+@app.get("/videos")
+async def list_videos():
+    """Returns a JSON list of available videos"""
+    available_videos = {}
+    for name, path in VIDEO_FILES.items():
+        if path.is_file():
+            server_host = os.environ.get("SERVER_IP", "localhost:3000")
+            available_videos[name] = f"http://{server_host}/stream/{name}"
+    
+    return {"videos": available_videos}
 
 # To run:
-# 1. Make sure MediaMTX is running: ./mediamtx
-# 2. Start this app: uvicorn app:app --host 0.0.0.0 --port 3000
+# uvicorn app:app --host 0.0.0.0 --port 3000
