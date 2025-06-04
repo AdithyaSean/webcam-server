@@ -23,7 +23,7 @@ webcam-server() {
             
             # Start the FastAPI app
             cd "$WEBCAM_SERVER_DIR" && uvicorn app:app --host 0.0.0.0 --port 3000 &
-            echo "http://localhost:3000/video1, http://localhost:3000/video2, http://localhost:3000/video3, http://localhost:3000/video4"
+            echo "Server started! Visit http://localhost:3000/ to see all available videos"
             echo "Press Ctrl+C to stop the server"
             echo "To stop the server, run: webcam-server stop"
             echo "To check the server status, run: webcam-server status"
@@ -39,13 +39,20 @@ webcam-server() {
             if pgrep -f "uvicorn app:app" > /dev/null; then
                 echo "HTTP Video server is running"
                 echo "Available video streams:"
-                echo "  Video endpoints:"
-                echo "Available video streams:"
-                for i in {1..4}; do
-                    if [ -f "${WEBCAM_SERVER_DIR}/videos/video${i}.mp4" ]; then
-                        echo "  - video${i}: http://localhost:3000/video${i}"
-                    fi
-                done
+                echo "  API endpoint: http://localhost:3000/ (lists all videos)"
+                echo "  Individual video streams:"
+                
+                # Find all video files dynamically
+                if [ -d "${WEBCAM_SERVER_DIR}/videos" ]; then
+                    for video_file in "${WEBCAM_SERVER_DIR}/videos"/*.{mp4,avi,mov,mkv,webm,flv} 2>/dev/null; do
+                        if [ -f "$video_file" ]; then
+                            video_name=$(basename "$video_file" | sed 's/\.[^.]*$//')
+                            echo "    - ${video_name}: http://localhost:3000/${video_name}"
+                        fi
+                    done
+                else
+                    echo "    No videos directory found"
+                fi
             else
                 echo "HTTP Video server is not running"
             fi

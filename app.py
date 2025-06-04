@@ -1,25 +1,72 @@
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+import glob
+import os
 
 # Video files configuration
 VIDEO_DIR = Path("videos")
-VIDEO_FILES = {
-    f"video{idx}": VIDEO_DIR / f"video{idx}.mp4" 
-    for idx in range(1, 5)
-}
+
+def get_available_videos():
+    """Dynamically discover all video files in the videos directory"""
+    video_files = {}
+    if VIDEO_DIR.exists():
+        # Support common video file extensions
+        video_extensions = ['*.mp4', '*.avi', '*.mov', '*.mkv', '*.webm', '*.flv']
+        
+        for extension in video_extensions:
+            for video_path in VIDEO_DIR.glob(extension):
+                # Use filename without extension as the key
+                video_name = video_path.stem
+                video_files[video_name] = video_path
+    
+    return video_files
+
+# Get all available video files
+VIDEO_FILES = get_available_videos()
 
 app = FastAPI()
+
+@app.get("/")
+async def list_videos():
+    """List all available video streams"""
+    # Refresh the video list to catch any newly added files
+    current_videos = get_available_videos()
+    
+    if not current_videos:
+        return {"message": "No video files found in the videos directory", "videos": []}
+    
+    video_list = []
+    for video_name, video_path in current_videos.items():
+        video_info = {
+            "name": video_name,
+            "url": f"/{video_name}",
+            "file": str(video_path),
+            "exists": video_path.exists()
+        }
+        video_list.append(video_info)
+    
+    return {
+        "message": f"Found {len(current_videos)} video(s)",
+        "videos": video_list
+    }
 
 @app.get("/{video_name}")
 async def stream_video(video_name: str):
     """Stream video with a simple file response"""
-    if video_name not in VIDEO_FILES:
-        raise HTTPException(status_code=404, detail=f"Video {video_name} not found")
+    # Refresh the video list to catch any newly added files
+    current_videos = get_available_videos()
     
-    video_path = VIDEO_FILES[video_name]
+    if video_name not in current_videos:
+        available_videos = list(current_videos.keys())
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Video '{video_name}' not found. Available videos: {available_videos}"
+        )
+    
+    video_path = current_videos[video_name]
     if not video_path.is_file():
-        raise HTTPException(status_code=404, detail=f"Video file {video_name} does not exist")
+        raise HTTPException(status_code=404, detail=f"Video file '{video_name}' does not exist")
     
     return FileResponse(path=video_path, media_type="video/mp4")
 
