@@ -44,12 +44,19 @@ webcam-server() {
                 
                 # Find all video files dynamically
                 if [ -d "${WEBCAM_SERVER_DIR}/videos" ]; then
-                    for video_file in "${WEBCAM_SERVER_DIR}/videos"/*.{mp4,avi,mov,mkv,webm,flv} 2>/dev/null; do
-                        if [ -f "$video_file" ]; then
-                            video_name=$(basename "$video_file" | sed 's/\.[^.]*$//')
-                            echo "    - ${video_name}: http://localhost:3000/${video_name}"
-                        fi
+                    found_videos=false
+                    for ext in mp4 avi mov mkv webm flv; do
+                        for video_file in "${WEBCAM_SERVER_DIR}/videos"/*."$ext"; do
+                            if [ -f "$video_file" ]; then
+                                video_name=$(basename "$video_file" | sed 's/\.[^.]*$//')
+                                echo "    - ${video_name}: http://localhost:3000/${video_name}"
+                                found_videos=true
+                            fi
+                        done
                     done
+                    if [ "$found_videos" = false ]; then
+                        echo "    No video files found in videos directory"
+                    fi
                 else
                     echo "    No videos directory found"
                 fi
