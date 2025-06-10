@@ -2,9 +2,6 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse
 import cv2
-import asyncio
-import glob
-import os
 import time
 
 # Video files configuration

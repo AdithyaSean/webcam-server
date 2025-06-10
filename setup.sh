@@ -26,7 +26,7 @@ echo "Setting up Python environment..."
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install fastapi uvicorn
+pip install fastapi uvicorn opencv-python
 
 # Add webcam-server.sh to .bashrc if not already present
 echo "Adding webcam-server.sh to .bashrc..."
